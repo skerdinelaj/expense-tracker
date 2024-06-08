@@ -1,15 +1,17 @@
 import { StyleSheet, Text, View } from "react-native";
 import React from "react";
 import { GlobalStyles } from "../../constant/styles";
+import { ExpenseOutputProps } from "./ExpenseOutput";
+import { ExpenseItems } from "../../store/redux/expensesSlice";
 
-const ExpenseSummary = ({ expenses, periodName }: any) => {
-  const expensesTotal = expenses.reduce((acc: number, cur: any) => {
+const ExpenseSummary = ({ expenses, periodExpensive }: ExpenseOutputProps) => {
+  const expensesTotal = expenses.reduce((acc: number, cur: ExpenseItems) => {
     return acc + cur.amount;
   }, 0);
 
   return (
     <View style={styles.container}>
-      <Text style={styles.period}>{periodName}</Text>
+      <Text style={styles.period}>{periodExpensive}</Text>
       <Text style={styles.sum}>${expensesTotal.toFixed(2)}</Text>
     </View>
   );

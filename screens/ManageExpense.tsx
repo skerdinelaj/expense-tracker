@@ -4,6 +4,14 @@ import IconButton from "../UI/IconButton";
 import { GlobalStyles } from "../constant/styles";
 import Button from "../UI/Button";
 import { ManageExpenseProps } from "./navigateTypes";
+import { useDispatch } from "react-redux";
+import {
+  deleteExpense,
+  updateExpense,
+  addExpense,
+} from "../store/redux/expensesSlice";
+import { AppDispatch } from "../store/redux/store";
+import { formatedDate } from "../util/date";
 
 const ManageExpense = ({ route, navigation }: ManageExpenseProps) => {
   const expenseId = route.params?.expenseId;
@@ -14,8 +22,13 @@ const ManageExpense = ({ route, navigation }: ManageExpenseProps) => {
       title: isEdditing ? "Edit Expense" : "Add Expense",
     });
   }, [navigation, isEdditing]);
-
+  const dispatch = useDispatch<AppDispatch>();
   function deleteExpenseHandler() {
+    if (expenseId === undefined) {
+      return;
+    } else {
+      dispatch(deleteExpense(expenseId));
+    }
     navigation.goBack();
   }
 
@@ -24,6 +37,26 @@ const ManageExpense = ({ route, navigation }: ManageExpenseProps) => {
   }
 
   function confirmHandler() {
+    if (isEdditing) {
+      dispatch(
+        updateExpense({
+          id: expenseId,
+          description: "Bileta Euro2024??",
+          amount: 500,
+          date: formatedDate(new Date()),
+        })
+      );
+    } else {
+      dispatch(
+        addExpense({
+          id: "a10",
+          description: "Bileta Euro2024",
+          amount: 250,
+          date: formatedDate(new Date()),
+        })
+      );
+      console.log("add expense");
+    }
     navigation.goBack();
   }
 

@@ -1,8 +1,9 @@
 import { Pressable, StyleSheet, Text, View } from "react-native";
-import { ExpenseItems } from "./ExpenseOutput";
+import { ExpenseItems } from "../../store/redux/expensesSlice";
 import { GlobalStyles } from "../../constant/styles";
 import { useNavigation } from "@react-navigation/native";
 import { ExpensesOverviewNavigationProp } from "../../screens/navigateTypes";
+import { formatedDate } from "../../util/date";
 
 type ExpenseItemProps = {
   item: ExpenseItems;
@@ -23,7 +24,7 @@ const ExpenseItem = ({ item }: ExpenseItemProps) => {
           <Text style={[styles.description, styles.textBase]}>
             {item.description}
           </Text>
-          <Text style={styles.textBase}>{item.date.toDateString()}</Text>
+          <Text style={styles.textBase}>{item.date}</Text>
         </View>
         <View style={styles.amountContainer}>
           <Text style={styles.amount}>{item.amount.toFixed(2)}</Text>
