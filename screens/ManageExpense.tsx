@@ -2,7 +2,6 @@ import { StyleSheet, Text, View } from "react-native";
 import React, { useLayoutEffect } from "react";
 import IconButton from "../UI/IconButton";
 import { GlobalStyles } from "../constant/styles";
-import Button from "../UI/Button";
 import { ManageExpenseProps } from "./navigateTypes";
 import { useDispatch } from "react-redux";
 import {
@@ -11,7 +10,15 @@ import {
   addExpense,
 } from "../store/redux/expensesSlice";
 import { AppDispatch } from "../store/redux/store";
-import { formatedDate } from "../util/date";
+import ExpenseForm from "../components/manageExpense/ExpenseForm";
+import { useSelector } from "react-redux";
+import { RootState } from "../store/redux/store";
+
+export type ExpenseData = {
+  amount: number;
+  date: string;
+  description: string;
+};
 
 const ManageExpense = ({ route, navigation }: ManageExpenseProps) => {
   const expenseId = route.params?.expenseId;
@@ -31,45 +38,36 @@ const ManageExpense = ({ route, navigation }: ManageExpenseProps) => {
     }
     navigation.goBack();
   }
-
   function cancelHandler() {
     navigation.goBack();
   }
 
-  function confirmHandler() {
+  const selectedExpense = useSelector((state: RootState) => {
+    return state.expenses.data.find((expense) => {
+      return expense.id === expenseId;
+    });
+  });
+
+  function confirmHandler(expenseData: ExpenseData) {
     if (isEdditing) {
-      dispatch(
-        updateExpense({
-          id: expenseId,
-          description: "Bileta Euro2024??",
-          amount: 500,
-          date: formatedDate(new Date()),
-        })
-      );
+      dispatch(updateExpense({ id: expenseId, ...expenseData }));
+
+      console.log("update expense", expenseId, expenseData);
     } else {
-      dispatch(
-        addExpense({
-          id: "a10",
-          description: "Bileta Euro2024",
-          amount: 250,
-          date: formatedDate(new Date()),
-        })
-      );
-      console.log("add expense");
+      dispatch(addExpense({ ...expenseData, id: Math.random().toString() }));
+      console.log("add expense", expenseData, Math.random().toString());
     }
     navigation.goBack();
   }
 
   return (
     <View style={styles.container}>
-      <View style={styles.buttons}>
-        <Button style={styles.button} onPress={cancelHandler} mode="flat">
-          Cancel
-        </Button>
-        <Button onPress={confirmHandler}>
-          {isEdditing ? "Update" : "Add"}
-        </Button>
-      </View>
+      <ExpenseForm
+        isEdditing={isEdditing}
+        onsubmit={confirmHandler}
+        cancelHandler={cancelHandler}
+        defaultValues={selectedExpense || {}}
+      />
       {isEdditing && (
         <View style={styles.deleteContainer}>
           <IconButton
@@ -98,14 +96,5 @@ const styles = StyleSheet.create({
     borderTopWidth: 2,
     borderTopColor: GlobalStyles.colors.primary200,
     alignItems: "center",
-  },
-  buttons: {
-    flexDirection: "row",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  button: {
-    minWidth: 120,
-    marginHorizontal: 8,
   },
 });

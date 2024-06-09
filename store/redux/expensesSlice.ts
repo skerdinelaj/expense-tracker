@@ -36,7 +36,7 @@ const DUMMY_EXPENSES = [
 export type ExpenseItems = {
   id: string;
   description: string;
-  amount: number;
+  amount: number | string;
   date: string;
 };
 
