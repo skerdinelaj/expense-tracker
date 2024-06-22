@@ -1,42 +1,15 @@
-import { createSlice, PayloadAction } from "@reduxjs/toolkit";
-
-const DUMMY_EXPENSES = [
-  {
-    id: "e1",
-    description: "A pair of shoes",
-    amount: 59.99,
-    date: "2021-12-19",
-  },
-  {
-    id: "e2",
-    description: "A pair of trousers",
-    amount: 89.29,
-    date: "2022-01-05",
-  },
-  {
-    id: "e3",
-    description: "Some Bananas",
-    amount: 5.99,
-    date: "2021-12-01",
-  },
-  {
-    id: "e4",
-    description: "A book",
-    amount: 14.99,
-    date: "2022-02-14",
-  },
-  {
-    id: "e5",
-    description: "Another book",
-    amount: 18.59,
-    date: "2024-06-07",
-  },
-];
+import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
+import {
+  storeExpense,
+  getExpenses,
+  deleteExpenseHelper,
+  updateExpenseHelper,
+} from "../../util/http";
 
 export type ExpenseItems = {
-  id: string;
+  id?: string;
   description: string;
-  amount: number | string;
+  amount: number;
   date: string;
 };
 
@@ -45,31 +18,65 @@ export type ExpenseItemsList = {
 };
 
 const initialState: ExpenseItemsList = {
-  data: [...DUMMY_EXPENSES],
+  data: [],
 };
+
+export const fetchExpensesThunk = createAsyncThunk(
+  "expenses/fetchExpenses",
+  async () => {
+    const response = await getExpenses();
+    return response;
+  }
+);
+
+export const addExpenseThunk = createAsyncThunk(
+  "expenses/addExpenseAsync",
+  async (expenseData: ExpenseItems) => {
+    const response = await storeExpense(expenseData);
+    return response;
+  }
+);
+
+export const deleteExpenseThunk = createAsyncThunk(
+  "expenses/deleteExpenseAsync",
+  async (id: string) => {
+    const response = await deleteExpenseHelper(id);
+    return response;
+  }
+);
+
+export const updateExpenseThunk = createAsyncThunk(
+  "expenses/updateExpenseAsync",
+  async (expenseData: ExpenseItems) => {
+    const response = await updateExpenseHelper(expenseData);
+    return response;
+  }
+);
 
 const expensesSlice = createSlice({
   name: "expenses",
   initialState: initialState,
-  reducers: {
-    addExpense: (state, action: PayloadAction<ExpenseItems>) => {
-      state.data.push(action.payload);
-    },
-    deleteExpense: (state, action: PayloadAction<string>) => {
-      state.data = state.data.filter((item) => item.id !== action.payload);
-    },
-    updateExpense: (state, action: PayloadAction<ExpenseItems>) => {
-      const expenseIndex = state.data.findIndex(
-        (item) => item.id === action.payload.id
-      );
-      if (expenseIndex > -1) {
-        state.data[expenseIndex] = action.payload;
-      }
-    },
+  reducers: {},
+  extraReducers: (builder) => {
+    builder
+      .addCase(fetchExpensesThunk.fulfilled, (state, action) => {
+        state.data = action.payload;
+      })
+      .addCase(addExpenseThunk.fulfilled, (state, action) => {
+        state.data.push(action.payload);
+      })
+      .addCase(deleteExpenseThunk.fulfilled, (state, action) => {
+        state.data = state.data.filter((item) => item.id !== action.payload);
+      })
+      .addCase(updateExpenseThunk.fulfilled, (state, action) => {
+        state.data = state.data.map((item) => {
+          if (item.id === action.payload.id) {
+            return action.payload;
+          }
+          return item;
+        });
+      });
   },
 });
-
-export const { addExpense, deleteExpense, updateExpense } =
-  expensesSlice.actions;
 
 export default expensesSlice.reducer;

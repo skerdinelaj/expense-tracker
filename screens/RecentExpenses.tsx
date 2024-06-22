@@ -1,15 +1,20 @@
-import { StyleSheet, Text, View } from "react-native";
-import React from "react";
+import { StyleSheet } from "react-native";
+import React, { useEffect } from "react";
 import ExpensiveOutput from "../components/expensiveOutput/ExpenseOutput";
-import { useSelector } from "react-redux";
+import { useSelector, useDispatch } from "react-redux";
+import { AppDispatch } from "../store/redux/store";
+import { fetchExpensesThunk } from "../store/redux/expensesSlice";
 import { RootState } from "../store/redux/store";
 
 const RecentExpenses = () => {
-  const expensesSelector = useSelector(
-    (state: RootState) => state.expenses.data
-  );
+  const dispatch = useDispatch<AppDispatch>();
+  const expenses = useSelector((state: RootState) => state.expenses.data);
 
-  const lastSevenDaysExpenses = expensesSelector.filter((item) => {
+  useEffect(() => {
+    dispatch(fetchExpensesThunk());
+  }, [dispatch]);
+
+  const lastSevenDaysExpenses = expenses.filter((item) => {
     const today = new Date();
     const date7DaysAgo = new Date(today.setDate(today.getDate() - 7));
     const itemDate = new Date(item.date);

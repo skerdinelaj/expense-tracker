@@ -1,74 +1,67 @@
-import { StyleSheet, Text, View } from "react-native";
-import React, { useLayoutEffect } from "react";
+import { useEffect, useLayoutEffect } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { StyleSheet, View } from "react-native";
 import IconButton from "../UI/IconButton";
 import { GlobalStyles } from "../constant/styles";
 import { ManageExpenseProps } from "./navigateTypes";
-import { useDispatch } from "react-redux";
-import {
-  deleteExpense,
-  updateExpense,
-  addExpense,
-} from "../store/redux/expensesSlice";
-import { AppDispatch } from "../store/redux/store";
+import { AppDispatch, RootState } from "../store/redux/store";
 import ExpenseForm from "../components/manageExpense/ExpenseForm";
-import { useSelector } from "react-redux";
-import { RootState } from "../store/redux/store";
-
-export type ExpenseData = {
-  amount: number;
-  date: string;
-  description: string;
-};
+import {
+  addExpenseThunk,
+  deleteExpenseThunk,
+  updateExpenseThunk,
+  fetchExpensesThunk,
+  ExpenseItems,
+} from "../store/redux/expensesSlice";
 
 const ManageExpense = ({ route, navigation }: ManageExpenseProps) => {
   const expenseId = route.params?.expenseId;
-  const isEdditing = !!expenseId;
+  const isEditing = !!expenseId;
+
+  const dispatch = useDispatch<AppDispatch>();
+  const expenses = useSelector((state: RootState) => state.expenses.data);
+
+  useEffect(() => {
+    dispatch(fetchExpensesThunk());
+  }, [dispatch]);
 
   useLayoutEffect(() => {
     navigation.setOptions({
-      title: isEdditing ? "Edit Expense" : "Add Expense",
+      title: isEditing ? "Edit Expense" : "Add Expense",
     });
-  }, [navigation, isEdditing]);
-  const dispatch = useDispatch<AppDispatch>();
-  function deleteExpenseHandler() {
-    if (expenseId === undefined) {
-      return;
+  }, [navigation, isEditing]);
+
+  const deleteExpenseHandler = () => {
+    if (expenseId) {
+      dispatch(deleteExpenseThunk(expenseId));
+      navigation.goBack();
+    }
+  };
+
+  const cancelHandler = () => {
+    navigation.goBack();
+  };
+
+  const selectedExpense = expenses.find((expense) => expense.id === expenseId);
+
+  const confirmHandler = (expenseData: ExpenseItems) => {
+    if (isEditing) {
+      dispatch(updateExpenseThunk({ id: expenseId, ...expenseData }));
     } else {
-      dispatch(deleteExpense(expenseId));
+      dispatch(addExpenseThunk(expenseData));
     }
     navigation.goBack();
-  }
-  function cancelHandler() {
-    navigation.goBack();
-  }
-
-  const selectedExpense = useSelector((state: RootState) => {
-    return state.expenses.data.find((expense) => {
-      return expense.id === expenseId;
-    });
-  });
-
-  function confirmHandler(expenseData: ExpenseData) {
-    if (isEdditing) {
-      dispatch(updateExpense({ id: expenseId, ...expenseData }));
-
-      console.log("update expense", expenseId, expenseData);
-    } else {
-      dispatch(addExpense({ ...expenseData, id: Math.random().toString() }));
-      console.log("add expense", expenseData, Math.random().toString());
-    }
-    navigation.goBack();
-  }
+  };
 
   return (
     <View style={styles.container}>
       <ExpenseForm
-        isEdditing={isEdditing}
-        onsubmit={confirmHandler}
+        isEditing={isEditing}
+        onSubmit={confirmHandler}
         cancelHandler={cancelHandler}
         defaultValues={selectedExpense || {}}
       />
-      {isEdditing && (
+      {isEditing && (
         <View style={styles.deleteContainer}>
           <IconButton
             onPress={deleteExpenseHandler}

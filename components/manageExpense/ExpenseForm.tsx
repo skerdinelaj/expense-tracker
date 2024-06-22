@@ -1,10 +1,9 @@
 import { Alert, StyleSheet, Text, View } from "react-native";
-import React from "react";
+import React, { useState } from "react";
 import Input from "./Input";
 import Button from "../../UI/Button";
-import { ExpenseData } from "../../screens/ManageExpense";
 import { formatedDate } from "../../util/date";
-import { useState } from "react";
+import { ExpenseItems } from "../../store/redux/expensesSlice";
 
 type InputValueType = {
   amount: string;
@@ -12,61 +11,94 @@ type InputValueType = {
   description: string;
 };
 
+type InputField = {
+  value: string;
+  isValid: boolean;
+};
+
+type InputValueWithValidation = {
+  amount: InputField;
+  date: InputField;
+  description: InputField;
+};
+
 type ExpenseFormProps = {
   cancelHandler: () => void;
-  isEdditing: boolean;
-  onsubmit: (data: ExpenseData) => void;
+  isEditing: boolean;
+  onSubmit: (data: ExpenseItems) => void;
   defaultValues: InputValueType | {};
 };
 
 const ExpenseForm = ({
   cancelHandler,
-  isEdditing,
-  onsubmit,
+  isEditing,
+  onSubmit,
   defaultValues,
 }: ExpenseFormProps) => {
-  const [inputValue, setInputValue] = useState<InputValueType>({
-    amount: defaultValues?.hasOwnProperty("amount")
-      ? (defaultValues as InputValueType)?.amount.toString()
-      : "",
-    date: defaultValues?.hasOwnProperty("date")
-      ? formatedDate(new Date((defaultValues as InputValueType)?.date)).slice(
-          0,
-          10
-        )
-      : "",
-    description: defaultValues?.hasOwnProperty("description")
-      ? (defaultValues as InputValueType)?.description
-      : "",
+  const [inputValues, setInputValues] = useState<InputValueWithValidation>({
+    amount: {
+      value: defaultValues?.hasOwnProperty("amount")
+        ? (defaultValues as InputValueType).amount.toString()
+        : "",
+      isValid: true,
+    },
+    date: {
+      value: defaultValues?.hasOwnProperty("date")
+        ? formatedDate(new Date((defaultValues as InputValueType).date)).slice(
+            0,
+            10
+          )
+        : "",
+      isValid: true,
+    },
+    description: {
+      value: defaultValues?.hasOwnProperty("description")
+        ? (defaultValues as InputValueType).description
+        : "",
+      isValid: true,
+    },
   });
 
-  function inputChangedHandler(inputIdentifier: string, enteredText: string) {
-    setInputValue((prevState) => {
-      return { ...prevState, [inputIdentifier]: enteredText };
+  function inputChangedHandler(
+    inputIdentifier: keyof InputValueType,
+    enteredText: string
+  ) {
+    setInputValues((prevState) => {
+      const updatedField = {
+        ...prevState[inputIdentifier],
+        value: enteredText,
+        isValid: true,
+      };
+      return { ...prevState, [inputIdentifier]: updatedField };
     });
   }
 
   function submitHandler() {
-    const expenseData = {
-      amount: +inputValue.amount,
-      date: formatedDate(new Date(inputValue.date)),
-      description: inputValue.description,
+    const expenseData: ExpenseItems = {
+      amount: +inputValues.amount.value,
+      date: inputValues.date.value, // Ensure date is a string
+      description: inputValues.description.value,
     };
 
-    const amounntIsValid = !isNaN(expenseData.amount) && expenseData.amount > 0;
-    const dateIsValid = expenseData.date.toString() !== "Invalid Date";
+    const amountIsValid = !isNaN(expenseData.amount) && expenseData.amount > 0;
+    const dateIsValid =
+      new Date(expenseData.date).toString() !== "Invalid Date";
     const descriptionIsValid = expenseData.description.trim().length > 0;
 
-    if (!amounntIsValid || !dateIsValid || !descriptionIsValid) {
+    if (!amountIsValid || !dateIsValid || !descriptionIsValid) {
+      setInputValues((prevState) => ({
+        amount: { ...prevState.amount, isValid: amountIsValid },
+        date: { ...prevState.date, isValid: dateIsValid },
+        description: { ...prevState.description, isValid: descriptionIsValid },
+      }));
       Alert.alert("Invalid Input", "Please check your entered data.", [
         { text: "Okay" },
       ]);
       return;
     }
-    onsubmit(expenseData);
-  }
 
-  console.log(inputValue);
+    onSubmit(expenseData);
+  }
 
   return (
     <View style={styles.form}>
@@ -76,29 +108,36 @@ const ExpenseForm = ({
           label="Amount"
           keyboardType="decimal-pad"
           onChangeText={inputChangedHandler.bind(this, "amount")}
-          value={inputValue.amount}
-          style={styles.rowInput}
+          value={inputValues.amount.value}
+          style={[
+            styles.rowInput,
+            !inputValues.amount.isValid && styles.invalidInput,
+          ]}
         />
         <Input
           label="Date"
           placeholder="YYYY-MM-DD"
           maxLength={10}
           onChangeText={inputChangedHandler.bind(this, "date")}
-          value={inputValue.date}
-          style={styles.rowInput}
+          value={inputValues.date.value}
+          style={[
+            styles.rowInput,
+            !inputValues.date.isValid && styles.invalidInput,
+          ]}
         />
       </View>
       <Input
         label="Description"
         multiline={true}
         onChangeText={inputChangedHandler.bind(this, "description")}
-        value={inputValue.description}
+        value={inputValues.description.value}
+        style={!inputValues.description.isValid && styles.invalidInput}
       />
       <View style={styles.buttons}>
         <Button style={styles.button} onPress={cancelHandler} mode="flat">
           Cancel
         </Button>
-        <Button onPress={submitHandler}>{isEdditing ? "Update" : "Add"}</Button>
+        <Button onPress={submitHandler}>{isEditing ? "Update" : "Add"}</Button>
       </View>
     </View>
   );
@@ -133,9 +172,8 @@ const styles = StyleSheet.create({
     minWidth: 120,
     marginHorizontal: 8,
   },
-  inputValidation: {
+  invalidInput: {
     borderColor: "red",
     borderBottomWidth: 2,
-    borderRadius: 6,
   },
 });
